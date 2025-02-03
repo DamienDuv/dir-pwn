@@ -1,8 +1,8 @@
-import asyncio
 from typing import Optional
 
-from task import Task
-from task_pool import TaskPool
+from job import Job
+from job_pool import JobPool
+from worker_pool import WorkerPool
 
 
 class Session:
@@ -10,38 +10,22 @@ class Session:
         self.base_url = base_url
         self.dictionary_path = dictionary_path
         self.output_db_path = output_db_path
-        self.task_pool = TaskPool()
+        self.job_pool = JobPool()
+        self.worker_pool = WorkerPool(self.job_pool)
 
 
     async def start_pwn(self):
-        num_workers = 3  # Number of concurrent workers
+        await self.worker_pool.add_workers(5)
 
-        # Start worker tasks
-        workers = [asyncio.create_task(self.worker(i)) for i in range(num_workers)]
+        with open("dictionaries/directory-list-2.3-small.txt") as dictionary:
+            lines = dictionary.readlines()[:1000]
+            lines = [line.strip() for line in lines]
 
-        for i in range(10):
-            print(f"Adding new task {i}")
-            await self.task_pool.push(Task(self.base_url, f"{i}"))
-            await asyncio.sleep(0.5)
+            for sub_dir in lines:
+                await self.job_pool.push(Job(self.job_pool, self.base_url, sub_dir))
 
-        await self.task_pool.wait_for_completion()
+        await self.job_pool.wait_for_completion()
+        await self.worker_pool.stop_all_workers()
 
-        # Stop workers by sending `None` sentinel values
-        for _ in range(num_workers):
-            await self.task_pool.push(None)
-
-        # Wait for workers to finish
-        await asyncio.gather(*workers)
-
-
-    async def worker(self, worker_id: int):
-        while True:
-            task = await self.task_pool.pop()
-            if task is None:
-                break
-            print(f"Worker {worker_id} processing task: {task}")
-            await task.run(self.task_pool)
-            print(f"Worker {worker_id} finished task: {task}")
-            self.task_pool.task_done()
 
 
