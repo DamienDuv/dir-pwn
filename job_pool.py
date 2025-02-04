@@ -13,7 +13,9 @@ class JobPool:
         self.all_jobs_done = asyncio.Event()
 
         # Rolling job completion tracking
-        self.job_timestamps = deque(maxlen=20)
+        self.job_timestamps = deque(maxlen=50)
+        self.job_per_second = 0
+        self.time_to_completion = 0
 
     async def push(self, new_job: Optional[job.Job]):
         """Push a new job."""
@@ -53,5 +55,5 @@ class JobPool:
         if len(self.job_timestamps) > 1:
             elapsed_time = self.job_timestamps[-1] - self.job_timestamps[0]
             if elapsed_time > 0:
-                jps = len(self.job_timestamps) / elapsed_time
-                print(f"Jobs/sec (rolling): {jps:.2f}")
+                self.job_per_second = len(self.job_timestamps) / elapsed_time
+                self.time_to_completion = self.active_jobs / self.job_per_second

@@ -15,10 +15,10 @@ class Session:
 
 
     async def start_pwn(self):
-        await self.worker_pool.add_workers(5)
+        await self.worker_pool.add_workers(50)
 
-        with open("dictionaries/directory-list-2.3-small.txt") as dictionary:
-            lines = dictionary.readlines()[:1000]
+        with open(self.dictionary_path) as dictionary:
+            lines = dictionary.readlines()
             lines = [line.strip() for line in lines]
 
             for sub_dir in lines:

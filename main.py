@@ -7,7 +7,11 @@ from session import Session
 async def main():
     start_time = time.time()
 
-    session = Session("http://localhost", "", "")
+    session = Session(
+        "http://10.10.1.139/",
+        "dictionaries/raft-small-words.txt"
+    )
+
     await session.start_pwn()
 
     end_time = time.time()
